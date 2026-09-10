@@ -20,35 +20,39 @@ async function getLinkedInPersonId() {
 }
 
 
-// Generate LinkedIn Post with Gemini
+// Generate Post using Gemini
 async function generatePost() {
 
     const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${GEMINI_KEY}`,
         {
             contents: [
                 {
                     parts: [
                         {
-                            text:
-`Create a professional LinkedIn post for Alpha Marketing.
+                            text: `
+Create a professional LinkedIn post for Alpha Marketing.
 
-Topic:
-AI Marketing, Website Design, SEO, Shopify, Digital Growth.
+Topics:
+- AI Marketing
+- Website Design
+- SEO
+- Shopify
+- Digital Growth
 
 Requirements:
-- Strong opening hook
-- Valuable information
+- Strong hook in first line
+- Give useful business advice
 - Professional tone
-- End with a call to action
-- Maximum 150 words`
+- End with CTA
+- Maximum 150 words
+`
                         }
                     ]
                 }
             ]
         }
     );
-
 
     return response.data.candidates[0]
         .content.parts[0].text;
@@ -58,15 +62,13 @@ Requirements:
 // Publish LinkedIn Post
 async function publishPost(text, personId) {
 
-
-    const postData = {
+    const data = {
 
         author: `urn:li:person:${personId}`,
 
         lifecycleState: "PUBLISHED",
 
         specificContent: {
-
             "com.linkedin.ugc.ShareContent": {
 
                 shareCommentary: {
@@ -78,37 +80,25 @@ async function publishPost(text, personId) {
         },
 
         visibility: {
-
             "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
-
         }
-
     };
 
 
     const response = await axios.post(
-
         "https://api.linkedin.com/v2/ugcPosts",
-
-        postData,
-
+        data,
         {
             headers: {
-
                 Authorization: `Bearer ${LINKEDIN_TOKEN}`,
-
                 "Content-Type": "application/json",
-
                 "X-Restli-Protocol-Version": "2.0.0"
-
             }
         }
-
     );
 
 
     return response.data;
-
 }
 
 
@@ -124,14 +114,14 @@ async function main(){
         console.log("Person ID:", personId);
 
 
-        console.log("Generating post...");
+        console.log("Generating AI Post...");
 
         const post = await generatePost();
 
         console.log(post);
 
 
-        console.log("Publishing...");
+        console.log("Publishing on LinkedIn...");
 
         await publishPost(post, personId);
 
@@ -146,7 +136,6 @@ async function main(){
         );
 
         process.exit(1);
-
     }
 
 }
