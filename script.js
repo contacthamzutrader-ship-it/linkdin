@@ -4,21 +4,44 @@ const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const LINKEDIN_TOKEN = process.env.LINKEDIN_ACCESS_TOKEN;
 
 
-// Generate LinkedIn Post
-async function generatePost(){
+// Get LinkedIn Person ID
+async function getLinkedInPersonId() {
+
+    const response = await axios.get(
+        "https://api.linkedin.com/v2/userinfo",
+        {
+            headers: {
+                Authorization: `Bearer ${LINKEDIN_TOKEN}`
+            }
+        }
+    );
+
+    return response.data.sub;
+}
+
+
+// Generate LinkedIn Post with Gemini
+async function generatePost() {
 
     const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
         {
-            contents:[
+            contents: [
                 {
-                    parts:[
+                    parts: [
                         {
                             text:
-                            `Create a professional LinkedIn post for Alpha Marketing.
-                            Topic: AI marketing, websites, SEO, Shopify.
-                            Add a strong hook, value and CTA.
-                            Keep it professional.`
+`Create a professional LinkedIn post for Alpha Marketing.
+
+Topic:
+AI Marketing, Website Design, SEO, Shopify, Digital Growth.
+
+Requirements:
+- Strong opening hook
+- Valuable information
+- Professional tone
+- End with a call to action
+- Maximum 150 words`
                         }
                     ]
                 }
@@ -26,62 +49,103 @@ async function generatePost(){
         }
     );
 
-    return response.data.candidates[0].content.parts[0].text;
+
+    return response.data.candidates[0]
+        .content.parts[0].text;
 }
 
 
-// Publish on LinkedIn
-async function postLinkedIn(text){
+// Publish LinkedIn Post
+async function publishPost(text, personId) {
 
-    const response = await axios.post(
-        "https://api.linkedin.com/v2/ugcPosts",
-        {
-            author:"urn:li:person:YOUR_PERSON_ID",
-            lifecycleState:"PUBLISHED",
-            specificContent:{
-                "com.linkedin.ugc.ShareContent":{
-                    shareCommentary:{
-                        text:text
-                    },
-                    shareMediaCategory:"NONE"
-                }
-            },
-            visibility:{
-                "com.linkedin.ugc.MemberNetworkVisibility":"PUBLIC"
+
+    const postData = {
+
+        author: `urn:li:person:${personId}`,
+
+        lifecycleState: "PUBLISHED",
+
+        specificContent: {
+
+            "com.linkedin.ugc.ShareContent": {
+
+                shareCommentary: {
+                    text: text
+                },
+
+                shareMediaCategory: "NONE"
             }
         },
+
+        visibility: {
+
+            "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+
+        }
+
+    };
+
+
+    const response = await axios.post(
+
+        "https://api.linkedin.com/v2/ugcPosts",
+
+        postData,
+
         {
-            headers:{
-                Authorization:`Bearer ${LINKEDIN_TOKEN}`,
-                "Content-Type":"application/json",
-                "X-Restli-Protocol-Version":"2.0.0"
+            headers: {
+
+                Authorization: `Bearer ${LINKEDIN_TOKEN}`,
+
+                "Content-Type": "application/json",
+
+                "X-Restli-Protocol-Version": "2.0.0"
+
             }
         }
+
     );
 
-    console.log("Posted:", response.data);
+
+    return response.data;
+
 }
 
 
 
 async function main(){
 
-    try{
+    try {
+
+        console.log("Getting LinkedIn ID...");
+
+        const personId = await getLinkedInPersonId();
+
+        console.log("Person ID:", personId);
+
+
+        console.log("Generating post...");
 
         const post = await generatePost();
 
         console.log(post);
 
-        await postLinkedIn(post);
 
-        console.log("Done ✅");
+        console.log("Publishing...");
 
-    }
-    catch(error){
+        await publishPost(post, personId);
+
+
+        console.log("LinkedIn Post Published ✅");
+
+
+    } catch(error){
 
         console.log(
             error.response?.data || error.message
         );
+
+        process.exit(1);
 
     }
 
