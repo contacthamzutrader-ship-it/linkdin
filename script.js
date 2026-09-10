@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
 const LINKEDIN_TOKEN = process.env.LINKEDIN_ACCESS_TOKEN;
 
 
@@ -20,55 +20,58 @@ async function getLinkedInPersonId() {
 }
 
 
-// Generate Post using Gemini
+// Generate LinkedIn Post using OpenRouter
 async function generatePost() {
 
     const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.0-flash:generateContent?key=${GEMINI_KEY}`,
+        "https://openrouter.ai/api/v1/chat/completions",
         {
-            contents: [
+            model: "google/gemini-2.0-flash-exp:free",
+
+            messages: [
                 {
-                    parts: [
-                        {
-                            text: `
-Create a professional LinkedIn post for Alpha Marketing.
+                    role: "user",
+                    content:
+`Create a professional LinkedIn post for Alpha Marketing.
 
 Topics:
-- AI Marketing
-- Website Design
-- SEO
-- Shopify
-- Digital Growth
+AI Marketing, Website Design, SEO, Shopify and Digital Growth.
 
 Requirements:
-- Strong hook in first line
-- Give useful business advice
+- Strong hook
+- Useful business advice
 - Professional tone
 - End with CTA
-- Maximum 150 words
-`
-                        }
-                    ]
+- Maximum 150 words`
                 }
             ]
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${OPENROUTER_KEY}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://github.com",
+                "X-Title": "LinkedIn Automation"
+            }
         }
     );
 
-    return response.data.candidates[0]
-        .content.parts[0].text;
+
+    return response.data.choices[0].message.content;
 }
 
 
-// Publish LinkedIn Post
+// Publish on LinkedIn
 async function publishPost(text, personId) {
 
-    const data = {
+    const postData = {
 
         author: `urn:li:person:${personId}`,
 
         lifecycleState: "PUBLISHED",
 
         specificContent: {
+
             "com.linkedin.ugc.ShareContent": {
 
                 shareCommentary: {
@@ -80,25 +83,37 @@ async function publishPost(text, personId) {
         },
 
         visibility: {
+
             "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+
         }
+
     };
 
 
     const response = await axios.post(
+
         "https://api.linkedin.com/v2/ugcPosts",
-        data,
+
+        postData,
+
         {
             headers: {
+
                 Authorization: `Bearer ${LINKEDIN_TOKEN}`,
+
                 "Content-Type": "application/json",
+
                 "X-Restli-Protocol-Version": "2.0.0"
+
             }
         }
+
     );
 
 
     return response.data;
+
 }
 
 
@@ -114,14 +129,14 @@ async function main(){
         console.log("Person ID:", personId);
 
 
-        console.log("Generating AI Post...");
+        console.log("Generating Post...");
 
         const post = await generatePost();
 
         console.log(post);
 
 
-        console.log("Publishing on LinkedIn...");
+        console.log("Publishing LinkedIn Post...");
 
         await publishPost(post, personId);
 
@@ -136,6 +151,7 @@ async function main(){
         );
 
         process.exit(1);
+
     }
 
 }
