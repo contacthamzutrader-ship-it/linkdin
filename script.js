@@ -26,7 +26,7 @@ async function generatePost() {
     const response = await axios.post(
         "https://openrouter.ai/api/v1/chat/completions",
         {
-            model: "google/gemini-2.0-flash-exp:free",
+            model: "model: "meta-llama/llama-3.1-8b-instruct:free",
 
             messages: [
                 {
